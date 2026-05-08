@@ -427,7 +427,7 @@
           <span class="preview-half-label">С наложением</span>
         </div>
         <div class="preview-half" id="previewSolid">
-          <span class="preview-half-label" style="border-color: var(--accent);">Результат</span>
+          <span class="preview-half-label">Результат</span>
         </div>
       </div>
       <div class="preview-half-caption">
@@ -534,6 +534,7 @@
     const previewSolid = document.getElementById('previewSolid');
     const previewAlphaHex = document.getElementById('previewAlphaHex');
     const previewSolidHex = document.getElementById('previewSolidHex');
+    const previewLabels = document.querySelectorAll('.preview-half-label');
     const elHex = document.getElementById('resultHex');
     const elRgb = document.getElementById('resultRgb');
     const elOklch = document.getElementById('resultOklch');
@@ -581,6 +582,11 @@
       return `oklch(${(l_).toFixed(3)} ${C.toFixed(3)} ${h.toFixed(1)}deg)`;
     }
 
+    function luminance(r, g, b) {
+      const w = [0.299, 0.587, 0.114];
+      return (r * w[0] + g * w[1] + b * w[2]) / 255;
+    }
+
     function blend(bg, fg, alpha, useGamma) {
       const G = useGamma ? GAMMA : 1;
       return bg.map((b, i) => {
@@ -621,6 +627,15 @@
 
       // Правая половина: solid результат
       previewSolid.style.background = hex;
+
+      // Цвет лейблов: белый на тёмном фоне, чёрный на светлом
+      // Левая половина — blended с alpha, оцениваем по bg + fg
+      const sampleBg = grid ? [176, 176, 176] : bg;
+      const blendedBg = blend(sampleBg, fg, alpha, useGamma);
+      const lumLeft = luminance(Math.round(blendedBg[0]), Math.round(blendedBg[1]), Math.round(blendedBg[2]));
+      const lumRight = luminance(r, g, b);
+      previewLabels[0].style.color = lumLeft > 0.5 ? '#000' : '#fff';
+      previewLabels[1].style.color = lumRight > 0.5 ? '#000' : '#fff';
 
       // Подписи
       previewAlphaHex.textContent = `${bgHexStr} + ${fgRgba}`;
