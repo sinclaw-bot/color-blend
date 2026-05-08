@@ -83,51 +83,54 @@
       transform: scale(1.05);
     }
 
-    /* Preview Canvas */
-    .preview-wrap {
-      position: relative;
+    /* Preview split */
+    .preview-split {
       margin-bottom: 28px;
       border-radius: var(--radius);
       overflow: hidden;
       box-shadow: var(--shadow);
     }
-    .preview-canvas {
-      width: 100%;
-      height: 260px;
-      display: block;
-      position: relative;
-      cursor: pointer;
+    .preview-split-bar {
+      display: flex;
+      height: 200px;
     }
-    .preview-canvas canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
+    .preview-half {
+      flex: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 14px;
+      transition: background .15s;
     }
-    .preview-label {
-      position: absolute;
-      bottom: 12px;
-      left: 50%;
-      transform: translateX(-50%);
+    .preview-half-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
       background: var(--surface);
-      border: 1px solid var(--border);
+      padding: 4px 12px;
       border-radius: 8px;
-      padding: 4px 14px;
-      font-size: 0.75rem;
-      font-weight: 500;
+      border: 1px solid var(--border);
+      opacity: 0.85;
+      transition: background .3s, border-color .3s;
+    }
+    .preview-half-caption {
+      padding: 10px 16px;
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      font-size: 0.72rem;
       font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
-      white-space: nowrap;
-      transition: background .3s, border-color .3s, color .3s;
+      color: var(--muted);
+      transition: color .3s;
     }
-    .preview-overlay-dot {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      border: 2px solid var(--border);
-      pointer-events: none;
+    .preview-half-caption span {
+      cursor: pointer;
+      padding: 2px 8px;
+      border-radius: 4px;
+      transition: background .15s;
     }
+    .preview-half-caption span:hover { background: var(--accent-soft); }
 
     /* Controls */
     .controls {
@@ -409,6 +412,7 @@
       .result-values { grid-template-columns: 1fr; }
       .header-left h1 { font-size: 1.3rem; }
       .bg-presets { margin-left: 0; }
+      .preview-half-caption { gap: 16px; font-size: 0.65rem; }
     }
   </style>
 </head>
@@ -423,12 +427,19 @@
       <button class="theme-toggle" id="themeToggle" title="Сменить тему">🌙</button>
     </header>
 
-    <!-- Preview -->
-    <div class="preview-wrap">
-      <div class="preview-canvas" id="previewCanvas">
-        <canvas id="previewCvs"></canvas>
-        <span class="preview-label" id="previewLabel">#ffffff</span>
-        <span class="preview-overlay-dot" id="previewDot"></span>
+    <!-- Preview split -->
+    <div class="preview-split">
+      <div class="preview-split-bar">
+        <div class="preview-half" id="previewAlpha">
+          <span class="preview-half-label">С наложением</span>
+        </div>
+        <div class="preview-half" id="previewSolid">
+          <span class="preview-half-label" style="border-color: var(--accent); color: var(--accent);">Результат</span>
+        </div>
+      </div>
+      <div class="preview-half-caption">
+        <span id="previewAlphaHex">rgba(255,107,53,0.30)</span>
+        <span id="previewSolidHex">#ffaa77</span>
       </div>
     </div>
 
@@ -463,10 +474,6 @@
         <label class="option-label">
           <input type="checkbox" id="gammaCorrect" checked>
           γ=2.2
-        </label>
-        <label class="option-label">
-          <input type="checkbox" id="showGrid">
-          Шахматный фон
         </label>
         <div class="bg-presets" id="bgPresets">
           <button class="bg-preset active" data-color="#ffffff" title="Белый"></button>
@@ -525,12 +532,12 @@
     const slider = document.getElementById('opacitySlider');
     const opacityDisplay = document.getElementById('opacityDisplay');
     const gammaCheck = document.getElementById('gammaCorrect');
-    const showGrid = document.getElementById('showGrid');
     const themeBtn = document.getElementById('themeToggle');
     const bgPresets = document.querySelectorAll('.bg-preset');
-    const previewCvs = document.getElementById('previewCvs');
-    const previewLabel = document.getElementById('previewLabel');
-    const previewDot = document.getElementById('previewDot');
+    const previewAlpha = document.getElementById('previewAlpha');
+    const previewSolid = document.getElementById('previewSolid');
+    const previewAlphaHex = document.getElementById('previewAlphaHex');
+    const previewSolidHex = document.getElementById('previewSolidHex');
     const resultSwatch = document.getElementById('resultSwatchLarge');
     const elHex = document.getElementById('resultHex');
     const elRgb = document.getElementById('resultRgb');
@@ -564,10 +571,8 @@
       return `hsl(${Math.round(h)}deg ${Math.round(s * 100)}% ${Math.round(l * 100)}%)`;
     }
     function rgbToOklch(r, g, b) {
-      // Linearize
       const lin = c => c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
       let lr = lin(r / 255), lg = lin(g / 255), lb = lin(b / 255);
-      // To LMS
       let L = 0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb;
       let M = 0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb;
       let S = 0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb;
@@ -591,60 +596,11 @@
       });
     }
 
-    // ≡ Canvas preview ≡
-    function drawPreview(bg, fg, alpha, useGamma, grid) {
-      const ctx = previewCvs.getContext('2d');
-      const W = previewCvs.width, H = previewCvs.height;
-      const result = blend(bg, fg, alpha, useGamma);
-      const hex = rgbToHex(...result.map(Math.round));
-
-      if (grid) {
-        const size = 24;
-        ctx.fillStyle = '#b0b0b0';
-        ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = '#d0d0d0';
-        for (let y = 0; y < H; y += size)
-          for (let x = (y / size) % 2 * size; x < W; x += size * 2)
-            ctx.fillRect(x, y, size, size);
-      } else {
-        ctx.fillStyle = `#${bg.map(c => c.toString(16).padStart(2, '0')).join('')}`;
-        ctx.fillRect(0, 0, W, H);
-      }
-
-      // Overlay
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = `#${fg.map(c => c.toString(16).padStart(2, '0')).join('')}`;
-      ctx.fillRect(0, 0, W, H);
-      ctx.globalAlpha = 1;
-
-      // Result strip at bottom
-      const stripH = Math.round(H * 0.18);
-      ctx.fillStyle = hex;
-      ctx.fillRect(0, H - stripH, W, stripH);
-
-      previewLabel.textContent = hex;
-      previewDot.style.background = `#${fg.map(c => c.toString(16).padStart(2, '0')).join('')}`;
-      previewDot.style.borderColor = `#${fg.map(c => c.toString(16).padStart(2, '0')).join('')}`;
-    }
-
-    function resizeCanvas() {
-      const rect = previewCvs.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      previewCvs.width = rect.width * dpr;
-      previewCvs.height = rect.height * dpr;
-      const ctx = previewCvs.getContext('2d');
-      ctx.scale(dpr, dpr);
-      // Store logical size
-      previewCvs._w = rect.width;
-      previewCvs._h = rect.height;
-    }
-
     function update() {
       const bg = hexToRgb(bgColor.value);
       const fg = hexToRgb(fgColor.value);
       const alpha = parseInt(slider.value) / 100;
       const useGamma = gammaCheck.checked;
-      const grid = showGrid.checked;
 
       opacityDisplay.textContent = alpha.toFixed(2);
 
@@ -655,6 +611,14 @@
       const hex = rgbToHex(r, g, b);
       const rgb = `rgb(${r},${g},${b})`;
       const ro = Math.round(otherResult[0]), go = Math.round(otherResult[1]), bo = Math.round(otherResult[2]);
+
+      // Preview split: левая половина = alpha на bg, правая = solid результат
+      const bgHexStr = bgColor.value;
+      previewAlpha.style.background = bgHexStr;
+      previewAlpha.style.backgroundImage = `linear-gradient(rgba(${fg.join(',')},${alpha.toFixed(2)}), rgba(${fg.join(',')},${alpha.toFixed(2)}))`;
+      previewAlphaHex.textContent = `rgba(${fg.join(',')},${alpha.toFixed(2)})`;
+      previewSolid.style.background = hex;
+      previewSolidHex.textContent = hex;
 
       // Result display
       resultSwatch.style.background = hex;
@@ -674,10 +638,6 @@
       extraFormula.textContent = useGamma
         ? `linear RGB (γ=${GAMMA})`
         : `linear RGB (без γ)`;
-
-      // Canvas
-      resizeCanvas();
-      drawPreview(bg, fg, alpha, useGamma, grid);
     }
 
     function copyText(text) {
@@ -692,7 +652,6 @@
       dark = !dark;
       document.documentElement.classList.toggle('dark', dark);
       themeBtn.textContent = dark ? '☀️' : '🌙';
-      // Re-draw canvas with updated CSS vars for grid
       update();
     });
 
@@ -724,7 +683,6 @@
     });
     slider.addEventListener('input', update);
     gammaCheck.addEventListener('change', update);
-    showGrid.addEventListener('change', update);
 
     // ≡ Resize ≡
     let resizeTimer;
