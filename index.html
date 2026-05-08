@@ -347,18 +347,21 @@
       const resultLinear = blendWithGamma(bg, fg, alpha, false);
       const resultWithGamma = blendWithGamma(bg, fg, alpha, true);
 
-      const r = Math.round(resultWithGamma[0]);
-      const g = Math.round(resultWithGamma[1]);
-      const b = Math.round(resultWithGamma[2]);
+      const curResult = useGamma ? resultWithGamma : resultLinear;
+
+      const r = Math.round(curResult[0]);
+      const g = Math.round(curResult[1]);
+      const b = Math.round(curResult[2]);
 
       const hex = rgbToHex(r, g, b);
       const rgb = `rgb(${r},${g},${b})`;
 
-      // no gamma
-      const rn = Math.round(resultLinear[0]);
-      const gn = Math.round(resultLinear[1]);
-      const bn = Math.round(resultLinear[2]);
-      const noGamma = rgbToHex(rn, gn, bn);
+      // no gamma — always show the opposite for comparison
+      const otherResult = useGamma ? resultLinear : resultWithGamma;
+      const ro = Math.round(otherResult[0]);
+      const go = Math.round(otherResult[1]);
+      const bo = Math.round(otherResult[2]);
+      const noGamma = rgbToHex(ro, go, bo);
 
       // swatches
       swatchBg.style.background = bgInput.value;
