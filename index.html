@@ -12,8 +12,8 @@
       --text: oklch(0.2 0 0);
       --muted: oklch(0.5 0 0);
       --border: oklch(0.9 0 0);
-      --accent: oklch(0.55 0.2 280);
-      --accent-soft: oklch(0.55 0.2 280 / 0.1);
+      --accent: oklch(0.45 0 0);
+      --accent-soft: oklch(0.45 0 0 / 0.1);
       --shadow: 0 4px 24px oklch(0 0 0 / 0.04);
       --radius: 16px;
     }
@@ -218,15 +218,31 @@
       flex: 1;
       position: relative;
     }
+    .opacity-slider-wrap {
+      position: relative;
+    }
     .opacity-slider-wrap input[type="range"] {
       width: 100%;
       height: 6px;
       -webkit-appearance: none;
       appearance: none;
       border-radius: 3px;
-      background: linear-gradient(to right, var(--accent) 0%, var(--accent) 50%, var(--border) 50%);
+      background: var(--border);
       outline: none;
       cursor: pointer;
+    }
+    .slider-ticks {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0 0;
+      pointer-events: none;
+    }
+    .slider-ticks span {
+      width: 2px;
+      height: 8px;
+      background: var(--muted);
+      border-radius: 1px;
+      opacity: 0.4;
     }
     .opacity-slider-wrap input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
@@ -466,6 +482,9 @@
         <label>Alpha</label>
         <div class="opacity-slider-wrap">
           <input type="range" id="opacitySlider" min="0" max="100" value="30">
+          <div class="slider-ticks">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
         </div>
         <span class="opacity-value" id="opacityDisplay">0.30</span>
       </div>
@@ -474,6 +493,10 @@
         <label class="option-label">
           <input type="checkbox" id="gammaCorrect" checked>
           γ=2.2
+        </label>
+        <label class="option-label">
+          <input type="checkbox" id="showGrid">
+          Шахматный
         </label>
         <div class="bg-presets" id="bgPresets">
           <button class="bg-preset active" data-color="#ffffff" title="Белый"></button>
@@ -532,6 +555,7 @@
     const slider = document.getElementById('opacitySlider');
     const opacityDisplay = document.getElementById('opacityDisplay');
     const gammaCheck = document.getElementById('gammaCorrect');
+    const showGrid = document.getElementById('showGrid');
     const themeBtn = document.getElementById('themeToggle');
     const bgPresets = document.querySelectorAll('.bg-preset');
     const previewAlpha = document.getElementById('previewAlpha');
@@ -601,6 +625,7 @@
       const fg = hexToRgb(fgColor.value);
       const alpha = parseInt(slider.value) / 100;
       const useGamma = gammaCheck.checked;
+      const grid = showGrid.checked;
 
       opacityDisplay.textContent = alpha.toFixed(2);
 
@@ -614,8 +639,12 @@
 
       // Preview split: левая половина = alpha на bg, правая = solid результат
       const bgHexStr = bgColor.value;
-      previewAlpha.style.background = bgHexStr;
-      previewAlpha.style.backgroundImage = `linear-gradient(rgba(${fg.join(',')},${alpha.toFixed(2)}), rgba(${fg.join(',')},${alpha.toFixed(2)}))`;
+      if (grid) {
+        previewAlpha.style.background = `url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><rect width="24" height="24" fill="%23b0b0b0"/><rect width="12" height="12" fill="%23d0d0d0"/><rect x="12" y="12" width="12" height="12" fill="%23d0d0d0"/></svg>')`;
+      } else {
+        previewAlpha.style.background = bgHexStr;
+      }
+      previewAlpha.style.backgroundImage += `, linear-gradient(rgba(${fg.join(',')},${alpha.toFixed(2)}), rgba(${fg.join(',')},${alpha.toFixed(2)}))`;
       previewAlphaHex.textContent = `rgba(${fg.join(',')},${alpha.toFixed(2)})`;
       previewSolid.style.background = hex;
       previewSolidHex.textContent = hex;
@@ -656,7 +685,9 @@
     });
 
     // ≡ Presets ≡
+    // Set preset background colors
     bgPresets.forEach(btn => {
+      btn.style.background = btn.dataset.color;
       btn.addEventListener('click', () => {
         bgPresets.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -683,6 +714,7 @@
     });
     slider.addEventListener('input', update);
     gammaCheck.addEventListener('change', update);
+    showGrid.addEventListener('change', update);
 
     // ≡ Resize ≡
     let resizeTimer;
