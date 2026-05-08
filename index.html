@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Color Blend — калькулятор наложения цвета</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
+  <style>
+    :root {
+      --bg: #f8f9fa;
+      --card: #ffffff;
+      --text: #1a1a2e;
+      --muted: #6c757d;
+      --border: #dee2e6;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+    .container { max-width: 800px; width: 100%; }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 16px;
+      align-items: flex-end;
+    }
+    .form-group {
+      flex: 1;
+      min-width: 140px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
+      background: #fff;
+      transition: border-color .15s;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+    }
+    .form-group input[type="color"] {
+      height: 44px;
+      padding: 4px;
+      cursor: pointer;
+    }
+
+    .swatch-row {
+      display: flex;
+      gap: 16px;
+      margin: 20px 0;
+    }
+    .swatch {
+      flex: 1;
+      height: 80px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: 'SF Mono', 'JetBrains Mono', monospace;
+      text-shadow: 0 1px 2px rgba(0,0,0,.3);
+      color: #fff;
+      position: relative;
+    }
+    .swatch-label {
+      position: absolute;
+      top: -18px;
+      left: 0;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--muted);
+      text-shadow: none;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .result-item {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .result-item .key {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .result-item .value {
+      font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .result-item .value:hover { opacity: .7; }
+    .copied-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a2e;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      opacity: 0;
+      transition: opacity .3s;
+      pointer-events: none;
+    }
+    .copied-toast.show { opacity: 1; }
+
+    .gamma-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .gamma-toggle label {
+      font-size: 0.85rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .gamma-toggle input[type="checkbox"] {
+      cursor: pointer;
+    }
+
+    .bg-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .bg-btn {
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: all .1s;
+    }
+    .bg-btn:hover { border-color: #6366f1; }
+    .bg-btn.active {
+      background: #6366f1;
+      color: #fff;
+      border-color: #6366f1;
+    }
+
+    .footer {
+      margin-top: 48px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .footer a { color: #6366f1; text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) {
+      .form-row { flex-direction: column; gap: 12px; }
+      .swatch-row { flex-direction: column; }
+      .result-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 Color Blend</h1>
+    <p class="subtitle">Калькулятор наложения полупрозрачного цвета на фон</p>
+
+    <div class="card">
+      <h2>Цвета</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Фон</label>
+          <input type="color" id="bgColor" value="#ffffff">
+        </div>
+        <div class="form-group">
+          <label>Накладываемый цвет</label>
+          <input type="color" id="fgColor" value="#ff6b35">
+        </div>
+        <div class="form-group" style="min-width: 100px;">
+          <label>Прозрачность</label>
+          <input type="number" id="opacity" min="0" max="1" step="0.01" value="0.5">
+        </div>
+      </div>
+
+      <div class="gamma-toggle">
+        <input type="checkbox" id="gammaCorrect" checked>
+        <label for="gammaCorrect">Гамма-коррекция (γ=2.2)</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Превью</h2>
+      <div class="swatch-row">
+        <div class="swatch" id="swatchBg">
+          <span class="swatch-label">Фон</span>
+          <span id="swatchBgLabel">#ffffff</span>
+        </div>
+        <div class="swatch" id="swatchOverlay">
+          <span class="swatch-label">Наложение</span>
+          <span id="swatchOverlayLabel">rgba(255,107,53,0.50)</span>
+        </div>
+        <div class="swatch" id="swatchResult">
+          <span class="swatch-label">Результат</span>
+          <span id="swatchResultLabel">#ffffff</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Результат</h2>
+      <div class="result-grid">
+        <div class="result-item">
+          <span class="key">HEX</span>
+          <span class="value" id="resultHex" onclick="copy(this)">#ffffff</span>
+        </div>
+        <div class="result-item">
+          <span class="key">RGB</span>
+          <span class="value" id="resultRgb" onclick="copy(this)">rgb(255,255,255)</span>
+        </div>
+        <div class="result-item">
+          <span class="key">Без гаммы</span>
+          <span class="value" id="resultNoGamma" onclick="copy(this)">—</span>
+        </div>
+        <div class="result-item">
+          <span class="key">Формула</span>
+          <span class="value" id="resultFormula" style="font-size:0.8rem;cursor:default" onclick="copy(this)">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Формула: <code>Y = Bg × (1-α) + Fg × α</code> с учётом гамма-коррекции. <a href="https://graphicdesign.stackexchange.com/questions/113007" target="_blank">Источник</a></p>
+      <p style="margin-top:4px;">Сделано Sinclaw · <a href="https://github.com/sinclaw-bot/color-blend" target="_blank">GitHub</a></p>
+    </div>
+  </div>
+
+  <div class="copied-toast" id="toast">Скопировано!</div>
+
+  <script>
+    const bgInput = document.getElementById('bgColor');
+    const fgInput = document.getElementById('fgColor');
+    const opacityInput = document.getElementById('opacity');
+    const gammaCheck = document.getElementById('gammaCorrect');
+
+    const swatchBg = document.getElementById('swatchBg');
+    const swatchOverlay = document.getElementById('swatchOverlay');
+    const swatchResult = document.getElementById('swatchResult');
+    const swatchBgLabel = document.getElementById('swatchBgLabel');
+    const swatchOverlayLabel = document.getElementById('swatchOverlayLabel');
+    const swatchResultLabel = document.getElementById('swatchResultLabel');
+
+    const elHex = document.getElementById('resultHex');
+    const elRgb = document.getElementById('resultRgb');
+    const elNoGamma = document.getElementById('resultNoGamma');
+    const elFormula = document.getElementById('resultFormula');
+    const toast = document.getElementById('toast');
+
+    const GAMMA = 2.2;
+
+    function hexToRgb(hex) {
+      const v = parseInt(hex.slice(1), 16);
+      return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+    }
+
+    function rgbToHex(r, g, b) {
+      const clamp = x => Math.max(0, Math.min(255, Math.round(x)));
+      return '#' + [r, g, b].map(c => clamp(c).toString(16).padStart(2, '0')).join('');
+    }
+
+    function blendWithGamma(bg, fg, alpha, useGamma) {
+      const G = useGamma ? GAMMA : 1;
+      return bg.map((b, i) => {
+        const bLin = Math.pow(b / 255, G);
+        const fLin = Math.pow(fg[i] / 255, G);
+        const rLin = bLin * (1 - alpha) + fLin * alpha;
+        return Math.pow(rLin, 1 / G) * 255;
+      });
+    }
+
+    function update() {
+      const bg = hexToRgb(bgInput.value);
+      const fg = hexToRgb(fgInput.value);
+      const alpha = parseFloat(opacityInput.value) || 0;
+      const useGamma = gammaCheck.checked;
+
+      const resultLinear = blendWithGamma(bg, fg, alpha, false);
+      const resultWithGamma = blendWithGamma(bg, fg, alpha, true);
+
+      const r = Math.round(resultWithGamma[0]);
+      const g = Math.round(resultWithGamma[1]);
+      const b = Math.round(resultWithGamma[2]);
+
+      const hex = rgbToHex(r, g, b);
+      const rgb = `rgb(${r},${g},${b})`;
+
+      // no gamma
+      const rn = Math.round(resultLinear[0]);
+      const gn = Math.round(resultLinear[1]);
+      const bn = Math.round(resultLinear[2]);
+      const noGamma = rgbToHex(rn, gn, bn);
+
+      // swatches
+      swatchBg.style.background = bgInput.value;
+      swatchBgLabel.textContent = bgInput.value;
+      swatchOverlay.style.background = `rgba(${fg.join(',')},${alpha.toFixed(2)})`;
+      swatchOverlayLabel.textContent = `rgba(${fg.join(',')},${alpha.toFixed(2)})`;
+      swatchResult.style.background = hex;
+      swatchResultLabel.textContent = hex;
+
+      // results
+      elHex.textContent = hex;
+      elRgb.textContent = rgb;
+      elNoGamma.textContent = noGamma;
+
+      const fml = alpha === 1
+        ? '100% непрозрачный'
+        : `Bg × (1-${alpha.toFixed(2)}) + Fg × ${alpha.toFixed(2)}`;
+      elFormula.textContent = useGamma ? `${fml} (γ=${GAMMA})` : `${fml} (линейный)`;
+
+      // auto-text color for swatches
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      const textColor = lum > 140 ? '#1a1a2e' : '#fff';
+      document.querySelectorAll('.swatch').forEach(el => {
+        el.style.color = textColor;
+      });
+    }
+
+    function copy(el) {
+      const text = el.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 1500);
+      });
+    }
+
+    [bgInput, fgInput, opacityInput, gammaCheck].forEach(el =>
+      el.addEventListener('input', update)
+    );
+
+    update();
+  </script>
+</body>
+</html>
