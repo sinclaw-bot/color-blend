@@ -614,11 +614,9 @@
 
       // Левая половина: шахматный фон + alpha overlay
       if (grid) {
-        previewAlpha.style.background = `repeating-conic-gradient(#b0b0b0 0% 25%, #d0d0d0 0% 50%) 0px 0px / 24px 24px`;
-        previewAlpha.style.backgroundImage = `linear-gradient(${fgRgba}, ${fgRgba})`;
+        previewAlpha.style.background = `linear-gradient(${fgRgba}, ${fgRgba}), repeating-conic-gradient(#b0b0b0 0% 25%, #d0d0d0 0% 50%) 0px 0px / 24px 24px`;
       } else {
         previewAlpha.style.background = `linear-gradient(${fgRgba}, ${fgRgba}), ${bgHexStr}`;
-        previewAlpha.style.backgroundImage = '';
       }
 
       // Правая половина: solid результат
