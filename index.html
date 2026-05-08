@@ -85,34 +85,41 @@
 
     /* Preview split */
     .preview-split {
+      background: var(--surface);
       margin-bottom: 28px;
       border-radius: var(--radius);
       overflow: hidden;
       box-shadow: var(--shadow);
+      transition: background .3s;
     }
-    .preview-split-bar {
+.preview-split-bar {
       display: flex;
       height: 200px;
     }
     .preview-half {
       flex: 1;
       display: flex;
-      align-items: flex-end;
+      align-items: flex-start;
       justify-content: center;
-      padding-bottom: 14px;
+      padding-top: 14px;
       transition: background .15s;
     }
     .preview-half-label {
-      font-size: 0.7rem;
-      font-weight: 600;
+      font-size: 0.65rem;
+      font-weight: 500;
       text-transform: uppercase;
       letter-spacing: .06em;
-      background: var(--surface);
-      padding: 4px 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      opacity: 0.85;
-      transition: background .3s, border-color .3s;
+      text-shadow:
+        0 0 3px oklch(0 0 0 / 0.4),
+        0 0 6px oklch(0 0 0 / 0.2);
+      opacity: 0.7;
+      pointer-events: none;
+      transition: opacity .3s;
+    }
+    .dark .preview-half-label {
+      text-shadow:
+        0 0 3px oklch(1 0 0 / 0.5),
+        0 0 6px oklch(1 0 0 / 0.2);
     }
     .preview-half-caption {
       padding: 10px 16px;
@@ -240,13 +247,14 @@
       cursor: pointer;
     }
     .slider-ticks {
-      display: flex;
-      justify-content: space-between;
-      height: 10px;
+      position: relative;
+      height: 8px;
       margin-top: 2px;
-      padding: 0 1px;
     }
     .slider-ticks span {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
       width: 1px;
       height: 6px;
       background: var(--muted);
@@ -451,7 +459,7 @@
         <label>Alpha</label>
         <div class="slider-wrap">
           <input type="range" id="opacitySlider" min="0" max="100" value="30">
-          <div class="slider-ticks"><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="slider-ticks"><span></span></div>
         </div>
         <span class="opacity-value" id="opacityDisplay">0.30</span>
       </div>
@@ -606,12 +614,12 @@
 
       // Левая половина: шахматный фон + alpha overlay
       if (grid) {
-        previewAlpha.style.background =
-          `repeating-conic-gradient(#b0b0b0 0% 25%, #d0d0d0 0% 50%) 0px 0px / 24px 24px`;
+        previewAlpha.style.background = `repeating-conic-gradient(#b0b0b0 0% 25%, #d0d0d0 0% 50%) 0px 0px / 24px 24px`;
+        previewAlpha.style.backgroundImage = `linear-gradient(${fgRgba}, ${fgRgba})`;
       } else {
-        previewAlpha.style.background = bgHexStr;
+        previewAlpha.style.background = `linear-gradient(${fgRgba}, ${fgRgba}), ${bgHexStr}`;
+        previewAlpha.style.backgroundImage = '';
       }
-      previewAlpha.style.backgroundImage = `linear-gradient(${fgRgba}, ${fgRgba})`;
 
       // Правая половина: solid результат
       previewSolid.style.background = hex;
