@@ -244,7 +244,15 @@
       box-shadow: 0 1px 4px oklch(0 0 0 / 0.2);
       cursor: pointer;
     }
-    .slider-ticks { position: relative; height: 8px; margin-top: 2px; }
+    .opacity-row { position: relative; }
+    .slider-ticks {
+      position: absolute;
+      left: 54px;
+      right: 60px;
+      bottom: -8px;
+      height: 6px;
+      pointer-events: none;
+    }
     .slider-ticks span {
       position: absolute;
       left: 50%;
