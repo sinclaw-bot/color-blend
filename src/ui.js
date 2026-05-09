@@ -20,7 +20,7 @@ export function initPresets(presetButtons, bgColor, bgHex, onUpdate) {
 export function createToast(toastEl) {
   return function showToast(text) {
     navigator.clipboard.writeText(text).then(() => {
-      toastEl.textContent = text;
+      toastEl.textContent = `Скопировано: ${text}`;
       toastEl.classList.add('show');
       clearTimeout(toastEl._timer);
       toastEl._timer = setTimeout(() => toastEl.classList.remove('show'), 1500);
