@@ -213,7 +213,16 @@
       color: var(--muted);
       min-width: 54px;
     }
-    .slider-wrap { flex: 1; }
+    .slider-wrap { flex: 1; position: relative; }
+    .slider-ticks {
+      position: absolute;
+      bottom: -6px;
+      left: 0;
+      right: 0;
+      height: 6px;
+      text-align: center;
+      pointer-events: none;
+    }
     .slider-wrap input[type="range"] {
       width: 100%;
       height: 6px;
@@ -244,14 +253,7 @@
       box-shadow: 0 1px 4px oklch(0 0 0 / 0.2);
       cursor: pointer;
     }
-        .slider-ticks {
-      position: absolute;
-      left: 54px;
-      right: 60px;
-      bottom: -8px;
-      height: 6px;
-      pointer-events: none;
-    }
+
     .slider-ticks span {
       position: absolute;
       left: 50%;
