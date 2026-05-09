@@ -25,10 +25,9 @@
       --border: oklch(0.25 0 0);
       --shadow: 0 4px 24px oklch(0 0 0 / 0.3);
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -83,7 +82,7 @@
       transform: scale(1.05);
     }
 
-    /* Preview split: CSS (naive) vs Solid result */
+    /* Preview split */
     .preview-split {
       background: var(--surface);
       margin-bottom: 28px;
@@ -151,7 +150,6 @@
       transition: background .3s, border-color .3s;
       margin-bottom: 20px;
     }
-
     .color-pickers {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -200,7 +198,6 @@
     }
     .color-pick-row .hex-input:focus { outline: none; border-color: var(--accent); }
 
-    /* Opacity slider */
     .opacity-row {
       display: flex;
       align-items: center;
@@ -215,9 +212,7 @@
       color: var(--muted);
       min-width: 54px;
     }
-    .slider-wrap {
-      flex: 1;
-    }
+    .slider-wrap { flex: 1; }
     .slider-wrap input[type="range"] {
       width: 100%;
       height: 6px;
@@ -248,11 +243,7 @@
       box-shadow: 0 1px 4px oklch(0 0 0 / 0.2);
       cursor: pointer;
     }
-    .slider-ticks {
-      position: relative;
-      height: 8px;
-      margin-top: 2px;
-    }
+    .slider-ticks { position: relative; height: 8px; margin-top: 2px; }
     .slider-ticks span {
       position: absolute;
       left: 50%;
@@ -263,7 +254,7 @@
       opacity: 0.35;
     }
     .opacity-value {
-      font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
+      font-family: 'SF Mono', 'JetBrains Mono', monospace;
       font-size: 0.9rem;
       font-weight: 600;
       min-width: 48px;
@@ -271,7 +262,6 @@
       color: var(--accent);
     }
 
-    /* Gamma + BG picker */
     .options-row {
       display: flex;
       flex-wrap: wrap;
@@ -292,7 +282,6 @@
       accent-color: var(--accent);
       cursor: pointer;
     }
-
     .bg-presets {
       display: flex;
       gap: 6px;
@@ -311,7 +300,7 @@
     .bg-preset:hover { transform: scale(1.15); }
     .bg-preset.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 
-    /* Result display (detailed) */
+    /* Result display */
     .result-display {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -351,7 +340,7 @@
       color: var(--muted);
     }
     .result-value-item .val {
-      font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
+      font-family: 'SF Mono', 'JetBrains Mono', monospace;
       font-size: 0.85rem;
       font-weight: 600;
     }
@@ -364,7 +353,7 @@
     .result-extra .extra-item {
       font-size: 0.75rem;
       color: var(--muted);
-      font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
+      font-family: 'SF Mono', 'JetBrains Mono', monospace;
       cursor: pointer;
       padding: 4px 10px;
       background: var(--bg);
@@ -387,7 +376,7 @@
     }
     .footer .info-link:hover { color: var(--accent); }
 
-    /* Modal overlay */
+    /* Modal */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -418,21 +407,13 @@
       position: relative;
       transition: background .3s, border-color .3s;
     }
-    .modal-box h2 {
-      font-size: 1.05rem;
-      margin-bottom: 16px;
-    }
+    .modal-box h2 { font-size: 1.05rem; margin-bottom: 16px; }
     .modal-box p {
-      font-size: 0.85rem;
-      line-height: 1.6;
-      margin-bottom: 12px;
-      color: var(--text);
+      font-size: 0.85rem; line-height: 1.6; margin-bottom: 12px;
     }
     .modal-box code {
       background: var(--accent-soft);
-      padding: 1px 5px;
-      border-radius: 4px;
-      font-size: 0.82rem;
+      padding: 1px 5px; border-radius: 4px; font-size: 0.82rem;
     }
     .modal-close {
       position: absolute;
@@ -479,7 +460,6 @@
 </head>
 <body>
   <div class="container">
-
     <header class="header">
       <div class="header-left">
         <h1>Color Blend</h1>
@@ -499,7 +479,7 @@
         </div>
       </div>
       <div class="preview-half-caption">
-        <span class="side" id="capCss">rgba(255,107,53,0.30)</span>
+        <span class="side" id="capCss">#fff + #ff6b354d</span>
         <span class="side" id="capSolid">#ffaa77</span>
       </div>
     </div>
@@ -541,7 +521,7 @@
           <input type="checkbox" id="showGrid">
           Шахматный
         </label>
-        <div class="bg-presets" id="bgPresets">
+        <div class="bg-presets">
           <button class="bg-preset active" data-color="#ffffff" title="Белый"></button>
           <button class="bg-preset" data-color="#f8f9fa" title="Светло-серый"></button>
           <button class="bg-preset" data-color="#e9ecef" title="Серый"></button>
@@ -551,29 +531,29 @@
       </div>
     </div>
 
-    <!-- Result (detailed) -->
+    <!-- Result -->
     <div class="result-display">
       <h2>Подробно</h2>
       <div class="result-values">
-        <div class="result-value-item" onclick="copyText(this.dataset.val)" data-val="">
+        <div class="result-value-item" onclick="window.copyText(this.dataset.val)" data-val="">
           <span class="key">HEX</span>
           <span class="val" id="resultHex">#ffffff</span>
         </div>
-        <div class="result-value-item" onclick="copyText(this.dataset.val)" data-val="">
+        <div class="result-value-item" onclick="window.copyText(this.dataset.val)" data-val="">
           <span class="key">RGB</span>
           <span class="val" id="resultRgb">rgb(255,255,255)</span>
         </div>
-        <div class="result-value-item" onclick="copyText(this.dataset.val)" data-val="">
+        <div class="result-value-item" onclick="window.copyText(this.dataset.val)" data-val="">
           <span class="key">OKLCH</span>
           <span class="val" id="resultOklch" style="font-size:0.75rem">—</span>
         </div>
-        <div class="result-value-item" onclick="copyText(this.dataset.val)" data-val="">
+        <div class="result-value-item" onclick="window.copyText(this.dataset.val)" data-val="">
           <span class="key">HSL</span>
           <span class="val" id="resultHsl" style="font-size:0.75rem">—</span>
         </div>
       </div>
       <div class="result-extra">
-        <span class="extra-item" id="extraLinear" onclick="copyText(this.textContent)">—</span>
+        <span class="extra-item" id="extraLinear" onclick="window.copyText(this.textContent)">—</span>
         <span class="extra-item" id="extraFormula">—</span>
       </div>
     </div>
@@ -607,220 +587,6 @@
     </div>
   </div>
 
-  <script>
-    // ≡ DOM refs ≡
-    const bgColor = document.getElementById('bgColor');
-    const fgColor = document.getElementById('fgColor');
-    const bgHex = document.getElementById('bgHex');
-    const fgHex = document.getElementById('fgHex');
-    const slider = document.getElementById('opacitySlider');
-    const opacityDisplay = document.getElementById('opacityDisplay');
-    const gammaCheck = document.getElementById('gammaCorrect');
-    const showGrid = document.getElementById('showGrid');
-    const themeBtn = document.getElementById('themeToggle');
-    const bgPresets = document.querySelectorAll('.bg-preset');
-    const panelCss = document.getElementById('panelCss');
-    const panelSolid = document.getElementById('panelSolid');
-    const capCss = document.getElementById('capCss');
-    const capSolid = document.getElementById('capSolid');
-    const previewLabels = document.querySelectorAll('.preview-panel-label');
-    const elHex = document.getElementById('resultHex');
-    const elRgb = document.getElementById('resultRgb');
-    const elOklch = document.getElementById('resultOklch');
-    const elHsl = document.getElementById('resultHsl');
-    const extraLinear = document.getElementById('extraLinear');
-    const extraFormula = document.getElementById('extraFormula');
-    const toast = document.getElementById('toast');
-
-    const GAMMA = 2.2;
-    let dark = localStorage.getItem('cblend-theme') === 'dark';
-    if (dark) {
-      document.documentElement.classList.add('dark');
-      themeBtn.textContent = '☀️';
-    }
-    function hexToRgb(hex) {
-      const v = parseInt(hex.slice(1), 16);
-      return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
-    }
-    function rgbToHex(r, g, b) {
-      const clamp = x => Math.max(0, Math.min(255, Math.round(x)));
-      return '#' + [r, g, b].map(c => clamp(c).toString(16).padStart(2, '0')).join('');
-    }
-    function rgbToHsl(r, g, b) {
-      r /= 255; g /= 255; b /= 255;
-      const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
-      let h = 0, s = 0, l = (mx + mn) / 2;
-      if (mx !== mn) {
-        const d = mx - mn;
-        s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
-        h = (mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4) * 60;
-      }
-      return `hsl(${Math.round(h)}deg ${Math.round(s * 100)}% ${Math.round(l * 100)}%)`;
-    }
-    function rgbToOklch(r, g, b) {
-      const lin = c => c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-      let lr = lin(r / 255), lg = lin(g / 255), lb = lin(b / 255);
-      let L = 0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb;
-      let M = 0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb;
-      let S = 0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb;
-      L = Math.cbrt(L); M = Math.cbrt(M); S = Math.cbrt(S);
-      const l_ = 0.2104542553 * L + 0.7936177850 * M - 0.0040720468 * S;
-      const a_ = 1.9779984951 * L - 2.4285922050 * M + 0.4505937099 * S;
-      const b_ = 0.0259040371 * L + 0.7827717662 * M - 0.8086757660 * S;
-      const C = Math.sqrt(a_ * a_ + b_ * b_);
-      let h = Math.atan2(b_, a_) * 180 / Math.PI;
-      if (h < 0) h += 360;
-      return `oklch(${(l_).toFixed(3)} ${C.toFixed(3)} ${h.toFixed(1)}deg)`;
-    }
-
-    function luminance(r, g, b) {
-      const w = [0.299, 0.587, 0.114];
-      return (r * w[0] + g * w[1] + b * w[2]) / 255;
-    }
-
-    function blend(bg, fg, alpha, useGamma) {
-      const G = useGamma ? GAMMA : 1;
-      return bg.map((b, i) => {
-        const bLin = Math.pow(b / 255, G);
-        const fLin = Math.pow(fg[i] / 255, G);
-        const rLin = bLin * (1 - alpha) + fLin * alpha;
-        return Math.pow(rLin, 1 / G) * 255;
-      });
-    }
-
-    function update() {
-      const bg = hexToRgb(bgColor.value);
-      const fg = hexToRgb(fgColor.value);
-      const alpha = parseInt(slider.value) / 100;
-      const useGamma = gammaCheck.checked;
-      const grid = showGrid.checked;
-
-      opacityDisplay.textContent = alpha.toFixed(2);
-
-      const curResult = blend(bg, fg, alpha, useGamma);
-      const otherResult = blend(bg, fg, alpha, !useGamma);
-
-      const r = Math.round(curResult[0]), g = Math.round(curResult[1]), b = Math.round(curResult[2]);
-      const hex = rgbToHex(r, g, b);
-      const rgb = `rgb(${r},${g},${b})`;
-      const ro = Math.round(otherResult[0]), go = Math.round(otherResult[1]), bo = Math.round(otherResult[2]);
-
-      // Preview: CSS rgba (наивный), Canvas (гамма), Solid результат
-      const bgHexStr = bgColor.value;
-      const fgRgba = `rgba(${fg.join(',')},${alpha.toFixed(2)})`;
-
-      // Панель 1: CSS rgba (без гаммы)
-      if (grid) {
-        panelCss.style.background = `linear-gradient(${fgRgba}, ${fgRgba}), repeating-conic-gradient(#b0b0b0 0% 25%, #d0d0d0 0% 50%) 0px 0px / 24px 24px`;
-      } else {
-        panelCss.style.background = `linear-gradient(${fgRgba}, ${fgRgba}), ${bgHexStr}`;
-      }
-
-      // Панель 2: Сплошной цвет — результат
-      panelSolid.style.background = hex;
-
-      // Цвет лейблов
-      const lumCss = luminance(
-        Math.round(bg[0] * (1 - alpha) + fg[0] * alpha),
-        Math.round(bg[1] * (1 - alpha) + fg[1] * alpha),
-        Math.round(bg[2] * (1 - alpha) + fg[2] * alpha)
-      );
-      const lumSolid = luminance(r, g, b);
-      previewLabels[0].style.color = lumCss > 0.5 ? '#000' : '#fff';
-      previewLabels[1].style.color = lumSolid > 0.5 ? '#000' : '#fff';
-      
-
-      // Подписи
-      const alphaHex = Math.round(alpha * 255).toString(16).padStart(2, '0');
-      capCss.textContent = `${bgHexStr} + ${fgHex.value}${alphaHex}`;
-      
-      capSolid.textContent = hex;
-
-      // Result display
-      elHex.textContent = hex;
-      elRgb.textContent = rgb;
-      elOklch.textContent = rgbToOklch(r, g, b);
-      elHsl.textContent = rgbToHsl(r, g, b);
-
-      // data-val for copy
-      document.querySelectorAll('.result-value-item').forEach(el => {
-        el.dataset.val = el.querySelector('.val').textContent;
-      });
-
-      extraLinear.textContent = useGamma
-        ? `без гаммы: ${rgbToHex(ro, go, bo)}`
-        : `с гаммой: ${rgbToHex(ro, go, bo)}`;
-      extraFormula.textContent = useGamma
-        ? `linear RGB (γ=${GAMMA})`
-        : `linear RGB (без γ)`;
-    }
-
-    function copyText(text) {
-      navigator.clipboard.writeText(text).then(() => {
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 1500);
-      });
-    }
-
-    function openInfo() {
-      document.getElementById('infoModal').classList.add('open');
-    }
-    function closeInfo() {
-      document.getElementById('infoModal').classList.remove('open');
-    }
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') closeInfo();
-    });
-
-    // ≡ Theme ≡
-    themeBtn.addEventListener('click', () => {
-      dark = !dark;
-      document.documentElement.classList.toggle('dark', dark);
-      themeBtn.textContent = dark ? '☀️' : '🌙';
-      localStorage.setItem('cblend-theme', dark ? 'dark' : 'light');
-      update();
-    });
-
-    // ≡ Presets ≡
-    bgPresets.forEach(btn => {
-      btn.style.background = btn.dataset.color;
-      btn.addEventListener('click', () => {
-        bgPresets.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        bgColor.value = btn.dataset.color;
-        bgHex.value = btn.dataset.color;
-        update();
-      });
-    });
-
-    // ≡ Input sync ≡
-    bgColor.addEventListener('input', () => { bgHex.value = bgColor.value; update(); });
-    bgHex.addEventListener('input', () => {
-      if (/^#[0-9a-f]{6}$/i.test(bgHex.value)) {
-        bgColor.value = bgHex.value;
-        update();
-      }
-    });
-    fgColor.addEventListener('input', () => { fgHex.value = fgColor.value; update(); });
-    fgHex.addEventListener('input', () => {
-      if (/^#[0-9a-f]{6}$/i.test(fgHex.value)) {
-        fgColor.value = fgHex.value;
-        update();
-      }
-    });
-    slider.addEventListener('input', update);
-    gammaCheck.addEventListener('change', update);
-    showGrid.addEventListener('change', update);
-
-    // ≡ Resize ≡
-    let resizeTimer;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(update, 80);
-    });
-
-    // ≡ Init ≡
-    update();
-  </script>
+  <script type="module" src="./src/app.js"></script>
 </body>
 </html>
