@@ -4,435 +4,74 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Color Blend — калькулятор наложения цвета</title>
+  <meta name="description" content="Визуальное сравнение CSS rgba и гамма-корректированного смешивания цветов">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
+  <script type="module">
+    import './components/color-blend-app.js';
+
+    // Инфо-модалка (обычный DOM, не Lit — живёт отдельно)
+    window.openInfo = () => document.getElementById('infoModal').classList.add('open');
+    window.closeInfo = () => document.getElementById('infoModal').classList.remove('open');
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') window.closeInfo();
+    });
+  </script>
+</head>
+<body>
+  <color-blend-app></color-blend-app>
+
+  <!-- Info Modal -->
+  <div id="infoModal" onclick="if(event.target===this)closeInfo()">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeInfo()">✕</button>
+      <h2>Как это работает</h2>
+      <p>
+        <strong>Alpha compositing</strong> — наложение полупрозрачного цвета на фон.
+        Результат считается по формуле <code>result = bg × (1-α) + fg × α</code>.
+      </p>
+      <p>
+        <strong>CSS rgba()</strong> смешивает цвета как есть, в sRGB — без гамма-коррекции.
+        Так сложилось исторически, и это нефизично.
+      </p>
+      <p>
+        <strong>Гамма-коррекция (γ=2.2):</strong> человеческий глаз воспринимает яркость
+        нелинейно. Правильное смешивание переводит sRGB → linear RGB (pow(v, γ)),
+        смешивает, затем обратно (pow(v, 1/γ)). Это даёт физически корректный результат,
+        совпадающий с WebGL, Canvas и Figma.
+      </p>
+      <p>
+        Включи/выключи γ-коррекцию чекбоксом — увидишь разницу.
+      </p>
+    </div>
+  </div>
+
   <style>
-    :root {
-      --bg: oklch(0.97 0 0);
-      --surface: oklch(1 0 0);
-      --text: oklch(0.2 0 0);
-      --muted: oklch(0.5 0 0);
-      --border: oklch(0.9 0 0);
-      --accent: oklch(0.45 0 0);
-      --accent-soft: oklch(0.45 0 0 / 0.1);
-      --shadow: 0 4px 24px oklch(0 0 0 / 0.04);
-      --radius: 16px;
-    }
-    .dark {
-      --bg: oklch(0.15 0 0);
-      --surface: oklch(0.2 0 0);
-      --text: oklch(0.95 0 0);
-      --muted: oklch(0.6 0 0);
-      --border: oklch(0.25 0 0);
-      --shadow: 0 4px 24px oklch(0 0 0 / 0.3);
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      transition: background .3s, color .3s;
-    }
-    .container {
-      max-width: 720px;
-      width: 100%;
-      padding: 32px 20px 60px;
-    }
-
-    /* Header */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 40px;
-    }
-    .header-left h1 {
-      font-size: 1.6rem;
-      font-weight: 700;
-      letter-spacing: -.02em;
-      background: linear-gradient(135deg, var(--text) 40%, var(--accent));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .header-left p {
-      color: var(--muted);
-      font-size: 0.85rem;
-      margin-top: 2px;
-    }
-    .theme-toggle {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 1.1rem;
-      transition: all .2s;
-      flex-shrink: 0;
-    }
-    .theme-toggle:hover {
-      border-color: var(--accent);
-      transform: scale(1.05);
-    }
-
-    /* Preview split: CSS (naive) vs Solid result */
-    .preview-split {
-      background: var(--surface);
-      margin-bottom: 28px;
-      border-radius: var(--radius);
-      overflow: hidden;
-      box-shadow: var(--shadow);
-      transition: background .3s;
-    }
-    .preview-split-bar {
-      display: flex;
-      height: 200px;
-    }
-    .preview-panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding-top: 14px;
-      transition: background .15s;
-    }
-    .preview-panel + .preview-panel {
-      border-left: 1px solid var(--border);
-    }
-    .preview-panel-label {
-      font-size: 0.65rem;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      padding: 2px 10px;
-      border-radius: 6px;
-      background: oklch(0 0 0 / 0.25);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      opacity: 0.75;
-      pointer-events: none;
-      z-index: 1;
-    }
-    .dark .preview-panel-label {
-      background: oklch(1 0 0 / 0.2);
-    }
-    .preview-half-caption {
-      padding: 10px 16px;
-      display: flex;
-    }
-    .preview-half-caption .side {
-      flex: 1;
-      text-align: center;
-      font-size: 0.72rem;
-      font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
-      color: var(--muted);
-      cursor: pointer;
-      padding: 2px 8px;
-      border-radius: 4px;
-      transition: background .15s;
-    }
-    .preview-half-caption .side:hover { background: var(--accent-soft); }
-
-    /* Controls */
-    .controls {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      box-shadow: var(--shadow);
-      transition: background .3s, border-color .3s;
-      margin-bottom: 20px;
-    }
-
-    .color-pickers {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 20px;
-    }
-    .color-pick-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .color-pick-group label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      color: var(--muted);
-    }
-    .color-pick-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .color-pick-row input[type="color"] {
-      width: 44px;
-      height: 44px;
-      padding: 2px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      cursor: pointer;
-      background: none;
-      flex-shrink: 0;
-    }
-    .color-pick-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-    .color-pick-row input[type="color"]::-webkit-color-swatch { border: none; border-radius: 8px; }
-    .color-pick-row .hex-input {
-      flex: 1;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 0.9rem;
-      font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
-      background: var(--bg);
-      color: var(--text);
-      transition: border-color .15s;
-    }
-    .color-pick-row .hex-input:focus { outline: none; border-color: var(--accent); }
-
-    /* Opacity slider */
-    .opacity-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    .opacity-row > label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      color: var(--muted);
-      min-width: 54px;
-    }
-    .slider-wrap {
-      flex: 1;
-    }
-    .slider-wrap input[type="range"] {
-      width: 100%;
-      height: 6px;
-      -webkit-appearance: none;
-      appearance: none;
-      border-radius: 3px;
-      background: var(--border);
-      outline: none;
-      cursor: pointer;
-      display: block;
-    }
-    .slider-wrap input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: var(--accent);
-      border: 3px solid var(--surface);
-      box-shadow: 0 1px 4px oklch(0 0 0 / 0.2);
-      cursor: pointer;
-    }
-    .slider-wrap input[type="range"]::-moz-range-thumb {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: var(--accent);
-      border: 3px solid var(--surface);
-      box-shadow: 0 1px 4px oklch(0 0 0 / 0.2);
-      cursor: pointer;
-    }
-    .slider-ticks {
-      position: relative;
-      height: 8px;
-      margin-top: 2px;
-    }
-    .slider-ticks span {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 1px;
-      height: 6px;
-      background: var(--muted);
-      opacity: 0.35;
-    }
-    .opacity-value {
-      font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
-      font-size: 0.9rem;
-      font-weight: 600;
-      min-width: 48px;
-      text-align: right;
-      color: var(--accent);
-    }
-
-    /* Gamma + BG picker */
-    .options-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      align-items: center;
-    }
-    .option-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      font-size: 0.82rem;
-      user-select: none;
-    }
-    .option-label input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      accent-color: var(--accent);
-      cursor: pointer;
-    }
-
-    .bg-presets {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-left: auto;
-    }
-    .bg-preset {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      border: 2px solid var(--border);
-      cursor: pointer;
-      transition: transform .15s, border-color .15s, box-shadow .15s;
-      flex-shrink: 0;
-    }
-    .bg-preset:hover { transform: scale(1.15); }
-    .bg-preset.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-
-    /* Result display (detailed) */
-    .result-display {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      box-shadow: var(--shadow);
-      transition: background .3s, border-color .3s;
-    }
-    .result-display h2 {
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      color: var(--muted);
-      margin-bottom: 14px;
-    }
-    .result-values {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px 20px;
-    }
-    .result-value-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 10px;
-      background: var(--bg);
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background .15s;
-    }
-    .result-value-item:hover { background: var(--accent-soft); }
-    .result-value-item .key {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-      color: var(--muted);
-    }
-    .result-value-item .val {
-      font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-    .result-extra {
-      margin-top: 12px;
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .result-extra .extra-item {
-      font-size: 0.75rem;
-      color: var(--muted);
-      font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
-      cursor: pointer;
-      padding: 4px 10px;
-      background: var(--bg);
-      border-radius: 6px;
-      transition: background .15s;
-    }
-    .result-extra .extra-item:hover { background: var(--accent-soft); }
-
-    .footer {
-      margin-top: 40px;
-      text-align: center;
-      font-size: 0.75rem;
-      color: var(--muted);
-    }
-    .footer a { color: var(--text); text-decoration: none; }
-    .footer a:hover { text-decoration: underline; }
-    .footer .info-link {
-      cursor: pointer;
-      border-bottom: 1px dotted var(--muted);
-    }
-    .footer .info-link:hover { color: var(--accent); }
-
-    /* Modal overlay */
-    .modal-overlay {
+    /* Info modal (не зависит от Lit) */
+    #infoModal {
+      display: none;
       position: fixed;
       inset: 0;
       background: oklch(0 0 0 / 0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
       z-index: 200;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .25s;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
     }
-    .modal-overlay.open {
-      opacity: 1;
-      pointer-events: auto;
+    #infoModal.open {
+      display: flex;
     }
-    .modal-box {
-      background: var(--surface);
-      color: var(--text);
-      border-radius: var(--radius);
+    .modal-content {
+      background: var(--surface, #fff);
+      color: var(--text, #000);
+      border-radius: 16px;
+      padding: 32px;
       max-width: 520px;
-      width: 90%;
-      max-height: 80vh;
+      width: 100%;
+      max-height: 90vh;
       overflow-y: auto;
-      padding: 28px 32px;
-      box-shadow: 0 8px 40px oklch(0 0 0 / 0.25);
-      border: 1px solid var(--border);
+      box-shadow: 0 8px 32px oklch(0 0 0 / 0.15);
       position: relative;
-      transition: background .3s, border-color .3s;
-    }
-    .modal-box h2 {
-      font-size: 1.05rem;
-      margin-bottom: 16px;
-    }
-    .modal-box p {
-      font-size: 0.85rem;
-      line-height: 1.6;
-      margin-bottom: 12px;
-      color: var(--text);
-    }
-    .modal-box code {
-      background: var(--accent-soft);
-      padding: 1px 5px;
-      border-radius: 4px;
-      font-size: 0.82rem;
+      line-height: 1.5;
     }
     .modal-close {
       position: absolute;
@@ -442,385 +81,27 @@
       border: none;
       font-size: 1.2rem;
       cursor: pointer;
-      color: var(--muted);
-      transition: color .15s;
+      color: var(--muted, oklch(0.5 0 0));
     }
-    .modal-close:hover { color: var(--text); }
-
-    .toast {
-      position: fixed;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%) translateY(10px);
-      background: var(--surface);
-      color: var(--text);
-      padding: 10px 22px;
-      border-radius: 10px;
-      font-size: 0.85rem;
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      opacity: 0;
-      transition: opacity .3s, transform .3s;
-      pointer-events: none;
-      z-index: 100;
+    .modal-content code {
+      background: var(--accent-soft, oklch(0.45 0 0 / 0.1));
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: 'SF Mono', 'JetBrains Mono', monospace;
+      font-size: 0.85em;
     }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-    @media (max-width: 600px) {
-      .container { padding: 20px 16px 40px; }
-      .color-pickers { grid-template-columns: 1fr; }
-      .result-values { grid-template-columns: 1fr; }
-      .header-left h1 { font-size: 1.3rem; }
-      .bg-presets { margin-left: 0; }
-      .preview-split-bar { height: 140px; }
-      .preview-half-caption .side { font-size: 0.6rem; }
+    .modal-content h2 {
+      margin: 0 0 12px;
+      font-size: 1.1rem;
+    }
+    .modal-content p {
+      font-size: 0.9rem;
+      margin: 0 0 12px;
+      color: var(--muted, oklch(0.5 0 0));
+    }
+    .modal-content p:last-child {
+      margin-bottom: 0;
     }
   </style>
-</head>
-<body>
-  <div class="container">
-
-    <header class="header">
-      <div class="header-left">
-        <h1>Color Blend</h1>
-        <p>Актуальный цвет после наложения</p>
-      </div>
-      <button class="theme-toggle" id="themeToggle" title="Сменить тему">🌙</button>
-    </header>
-
-    <!-- Preview: CSS rgba vs Solid result -->
-    <div class="preview-split">
-      <div class="preview-split-bar">
-        <div class="preview-panel" id="panelCss">
-          <span class="preview-panel-label">Браузер (CSS)</span>
-        </div>
-        <div class="preview-panel" id="panelSolid">
-          <span class="preview-panel-label">Результат</span>
-        </div>
-      </div>
-      <div class="preview-half-caption">
-        <span class="side" id="capCss">rgba(255,107,53,0.30)</span>
-        <span class="side" id="capSolid">#ffaa77</span>
-      </div>
-    </div>
-
-    <!-- Controls -->
-    <div class="controls">
-      <div class="color-pickers">
-        <div class="color-pick-group">
-          <label>Фон</label>
-          <div class="color-pick-row">
-            <input type="color" id="bgColor" value="#ffffff">
-            <input type="text" class="hex-input" id="bgHex" value="#ffffff" maxlength="7" spellcheck="false">
-          </div>
-        </div>
-        <div class="color-pick-group">
-          <label>Накладываемый цвет</label>
-          <div class="color-pick-row">
-            <input type="color" id="fgColor" value="#ff6b35">
-            <input type="text" class="hex-input" id="fgHex" value="#ff6b35" maxlength="7" spellcheck="false">
-          </div>
-        </div>
-      </div>
-
-      <div class="opacity-row">
-        <label>Alpha</label>
-        <div class="slider-wrap">
-          <input type="range" id="opacitySlider" min="0" max="100" value="30">
-          <div class="slider-ticks"><span></span></div>
-        </div>
-        <span class="opacity-value" id="opacityDisplay">0.30</span>
-      </div>
-
-      <div class="options-row">
-        <label class="option-label">
-          <input type="checkbox" id="gammaCorrect" checked>
-          γ=2.2
-        </label>
-        <label class="option-label">
-          <input type="checkbox" id="showGrid">
-          Шахматный
-        </label>
-        <div class="bg-presets" id="bgPresets">
-          <button class="bg-preset active" data-color="#ffffff" title="Белый"></button>
-          <button class="bg-preset" data-color="#f8f9fa" title="Светло-серый"></button>
-          <button class="bg-preset" data-color="#e9ecef" title="Серый"></button>
-          <button class="bg-preset" data-color="#1a1a2e" title="Тёмный"></button>
-          <button class="bg-preset" data-color="#000000" title="Чёрный"></button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Result (detailed) -->
-    <div class="result-display">
-      <h2>Подробно</h2>
-      <div class="result-values">
-        <div class="result-value-item" onclick="copyText(this.dataset.val)" data-val="">
-          <span class="key">HEX</span>
-          <span class="val" id="resultHex">#ffffff</span>
-        </div>
-        <div class="result-value-item" onclick="copyText(this.dataset.val)" data-val="">
-          <span class="key">RGB</span>
-          <span class="val" id="resultRgb">rgb(255,255,255)</span>
-        </div>
-        <div class="result-value-item" onclick="copyText(this.dataset.val)" data-val="">
-          <span class="key">OKLCH</span>
-          <span class="val" id="resultOklch" style="font-size:0.75rem">—</span>
-        </div>
-        <div class="result-value-item" onclick="copyText(this.dataset.val)" data-val="">
-          <span class="key">HSL</span>
-          <span class="val" id="resultHsl" style="font-size:0.75rem">—</span>
-        </div>
-      </div>
-      <div class="result-extra">
-        <span class="extra-item" id="extraLinear" onclick="copyText(this.textContent)">—</span>
-        <span class="extra-item" id="extraFormula">—</span>
-      </div>
-    </div>
-
-    <div class="footer">
-      <p>Формула: <code>Y = Bg × (1-α) + Fg × α</code> с опциональной гамма-коррекцией.
-      <span class="info-link" onclick="openInfo()">Подробнее</span>  ·
-      <a href="https://github.com/sinclaw-bot/color-blend" target="_blank">GitHub</a></p>
-    </div>
-  </div>
-
-  <div class="toast" id="toast">Скопировано!</div>
-
-  <!-- About modal -->
-  <div class="modal-overlay" id="infoModal" onclick="if(event.target===this)closeInfo()">
-    <div class="modal-box">
-      <button class="modal-close" onclick="closeInfo()">✕</button>
-      <h2>Как это работает</h2>
-      <p><strong>Формула наложения (alpha compositing):</strong></p>
-      <p><code>R = Bg × (1 − α) + Fg × α</code></p>
-      <p>Где <code>Bg</code> — цвет фона, <code>Fg</code> — накладываемый цвет, <code>α</code> — его непрозрачность (alpha-канал) от 0 до 1.</p>
-      <p>Так считает цвет ваш браузер и любой графический редактор при наложении полупрозрачных объектов.</p>
-      <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
-      <p><strong>Гамма-коррекция (γ = 2.2):</strong></p>
-      <p>Человеческий глаз воспринимает яркость нелинейно. Физически удвоение энергии света не означает «в два раза ярче».</p>
-      <p>В компьютерной графике цвета хранятся в sRGB — гамма-скорректированном пространстве. Для физически корректного смешивания цвета нужно перевести их в линейное пространство, смешать, а потом вернуть обратно:</p>
-      <p><code>Rlin = (Bg / 255)^γ · (1 − α) + (Fg / 255)^γ · α</code><br>
-      <code>R = Rlin^(1/γ) · 255</code></p>
-      <p>Когда гамма-коррекция <strong>включена</strong>, результат выглядит так, как этого ожидает глаз — плавные и естественные переходы. Когда <strong>выключена</strong> — получается «наивная» формула, которую иногда пишут в коде по незнанию.</p>
-      <p style="font-size:0.78rem;color:var(--muted);margin-top:16px"><em>Подробнее: sRGB, gamma encoding, linear color space на википедии.</em></p>
-    </div>
-  </div>
-
-  <script>
-    // ≡ DOM refs ≡
-    const bgColor = document.getElementById('bgColor');
-    const fgColor = document.getElementById('fgColor');
-    const bgHex = document.getElementById('bgHex');
-    const fgHex = document.getElementById('fgHex');
-    const slider = document.getElementById('opacitySlider');
-    const opacityDisplay = document.getElementById('opacityDisplay');
-    const gammaCheck = document.getElementById('gammaCorrect');
-    const showGrid = document.getElementById('showGrid');
-    const themeBtn = document.getElementById('themeToggle');
-    const bgPresets = document.querySelectorAll('.bg-preset');
-    const panelCss = document.getElementById('panelCss');
-    const panelSolid = document.getElementById('panelSolid');
-    const capCss = document.getElementById('capCss');
-    const capSolid = document.getElementById('capSolid');
-    const previewLabels = document.querySelectorAll('.preview-panel-label');
-    const elHex = document.getElementById('resultHex');
-    const elRgb = document.getElementById('resultRgb');
-    const elOklch = document.getElementById('resultOklch');
-    const elHsl = document.getElementById('resultHsl');
-    const extraLinear = document.getElementById('extraLinear');
-    const extraFormula = document.getElementById('extraFormula');
-    const toast = document.getElementById('toast');
-
-    const GAMMA = 2.2;
-    let dark = localStorage.getItem('cblend-theme') === 'dark';
-    if (dark) {
-      document.documentElement.classList.add('dark');
-      themeBtn.textContent = '☀️';
-    }
-    function hexToRgb(hex) {
-      const v = parseInt(hex.slice(1), 16);
-      return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
-    }
-    function rgbToHex(r, g, b) {
-      const clamp = x => Math.max(0, Math.min(255, Math.round(x)));
-      return '#' + [r, g, b].map(c => clamp(c).toString(16).padStart(2, '0')).join('');
-    }
-    function rgbToHsl(r, g, b) {
-      r /= 255; g /= 255; b /= 255;
-      const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
-      let h = 0, s = 0, l = (mx + mn) / 2;
-      if (mx !== mn) {
-        const d = mx - mn;
-        s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
-        h = (mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4) * 60;
-      }
-      return `hsl(${Math.round(h)}deg ${Math.round(s * 100)}% ${Math.round(l * 100)}%)`;
-    }
-    function rgbToOklch(r, g, b) {
-      const lin = c => c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-      let lr = lin(r / 255), lg = lin(g / 255), lb = lin(b / 255);
-      let L = 0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb;
-      let M = 0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb;
-      let S = 0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb;
-      L = Math.cbrt(L); M = Math.cbrt(M); S = Math.cbrt(S);
-      const l_ = 0.2104542553 * L + 0.7936177850 * M - 0.0040720468 * S;
-      const a_ = 1.9779984951 * L - 2.4285922050 * M + 0.4505937099 * S;
-      const b_ = 0.0259040371 * L + 0.7827717662 * M - 0.8086757660 * S;
-      const C = Math.sqrt(a_ * a_ + b_ * b_);
-      let h = Math.atan2(b_, a_) * 180 / Math.PI;
-      if (h < 0) h += 360;
-      return `oklch(${(l_).toFixed(3)} ${C.toFixed(3)} ${h.toFixed(1)}deg)`;
-    }
-
-    function luminance(r, g, b) {
-      const w = [0.299, 0.587, 0.114];
-      return (r * w[0] + g * w[1] + b * w[2]) / 255;
-    }
-
-    function blend(bg, fg, alpha, useGamma) {
-      const G = useGamma ? GAMMA : 1;
-      return bg.map((b, i) => {
-        const bLin = Math.pow(b / 255, G);
-        const fLin = Math.pow(fg[i] / 255, G);
-        const rLin = bLin * (1 - alpha) + fLin * alpha;
-        return Math.pow(rLin, 1 / G) * 255;
-      });
-    }
-
-    function update() {
-      const bg = hexToRgb(bgColor.value);
-      const fg = hexToRgb(fgColor.value);
-      const alpha = parseInt(slider.value) / 100;
-      const useGamma = gammaCheck.checked;
-      const grid = showGrid.checked;
-
-      opacityDisplay.textContent = alpha.toFixed(2);
-
-      const curResult = blend(bg, fg, alpha, useGamma);
-      const otherResult = blend(bg, fg, alpha, !useGamma);
-
-      const r = Math.round(curResult[0]), g = Math.round(curResult[1]), b = Math.round(curResult[2]);
-      const hex = rgbToHex(r, g, b);
-      const rgb = `rgb(${r},${g},${b})`;
-      const ro = Math.round(otherResult[0]), go = Math.round(otherResult[1]), bo = Math.round(otherResult[2]);
-
-      // Preview: CSS rgba (наивный), Canvas (гамма), Solid результат
-      const bgHexStr = bgColor.value;
-      const fgRgba = `rgba(${fg.join(',')},${alpha.toFixed(2)})`;
-
-      // Панель 1: CSS rgba (без гаммы)
-      if (grid) {
-        panelCss.style.background = `linear-gradient(${fgRgba}, ${fgRgba}), repeating-conic-gradient(#b0b0b0 0% 25%, #d0d0d0 0% 50%) 0px 0px / 24px 24px`;
-      } else {
-        panelCss.style.background = `linear-gradient(${fgRgba}, ${fgRgba}), ${bgHexStr}`;
-      }
-
-      // Панель 2: Сплошной цвет — результат
-      panelSolid.style.background = hex;
-
-      // Цвет лейблов
-      const lumCss = luminance(
-        Math.round(bg[0] * (1 - alpha) + fg[0] * alpha),
-        Math.round(bg[1] * (1 - alpha) + fg[1] * alpha),
-        Math.round(bg[2] * (1 - alpha) + fg[2] * alpha)
-      );
-      const lumSolid = luminance(r, g, b);
-      previewLabels[0].style.color = lumCss > 0.5 ? '#000' : '#fff';
-      previewLabels[1].style.color = lumSolid > 0.5 ? '#000' : '#fff';
-      
-
-      // Подписи
-      const alphaHex = Math.round(alpha * 255).toString(16).padStart(2, '0');
-      capCss.textContent = `${bgHexStr} + ${fgHex.value}${alphaHex}`;
-      
-      capSolid.textContent = hex;
-
-      // Result display
-      elHex.textContent = hex;
-      elRgb.textContent = rgb;
-      elOklch.textContent = rgbToOklch(r, g, b);
-      elHsl.textContent = rgbToHsl(r, g, b);
-
-      // data-val for copy
-      document.querySelectorAll('.result-value-item').forEach(el => {
-        el.dataset.val = el.querySelector('.val').textContent;
-      });
-
-      extraLinear.textContent = useGamma
-        ? `без гаммы: ${rgbToHex(ro, go, bo)}`
-        : `с гаммой: ${rgbToHex(ro, go, bo)}`;
-      extraFormula.textContent = useGamma
-        ? `linear RGB (γ=${GAMMA})`
-        : `linear RGB (без γ)`;
-    }
-
-    function copyText(text) {
-      navigator.clipboard.writeText(text).then(() => {
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 1500);
-      });
-    }
-
-    function openInfo() {
-      document.getElementById('infoModal').classList.add('open');
-    }
-    function closeInfo() {
-      document.getElementById('infoModal').classList.remove('open');
-    }
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') closeInfo();
-    });
-
-    // ≡ Theme ≡
-    themeBtn.addEventListener('click', () => {
-      dark = !dark;
-      document.documentElement.classList.toggle('dark', dark);
-      themeBtn.textContent = dark ? '☀️' : '🌙';
-      localStorage.setItem('cblend-theme', dark ? 'dark' : 'light');
-      update();
-    });
-
-    // ≡ Presets ≡
-    bgPresets.forEach(btn => {
-      btn.style.background = btn.dataset.color;
-      btn.addEventListener('click', () => {
-        bgPresets.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        bgColor.value = btn.dataset.color;
-        bgHex.value = btn.dataset.color;
-        update();
-      });
-    });
-
-    // ≡ Input sync ≡
-    bgColor.addEventListener('input', () => { bgHex.value = bgColor.value; update(); });
-    bgHex.addEventListener('input', () => {
-      if (/^#[0-9a-f]{6}$/i.test(bgHex.value)) {
-        bgColor.value = bgHex.value;
-        update();
-      }
-    });
-    fgColor.addEventListener('input', () => { fgHex.value = fgColor.value; update(); });
-    fgHex.addEventListener('input', () => {
-      if (/^#[0-9a-f]{6}$/i.test(fgHex.value)) {
-        fgColor.value = fgHex.value;
-        update();
-      }
-    });
-    slider.addEventListener('input', update);
-    gammaCheck.addEventListener('change', update);
-    showGrid.addEventListener('change', update);
-
-    // ≡ Resize ≡
-    let resizeTimer;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(update, 80);
-    });
-
-    // ≡ Init ≡
-    update();
-  </script>
 </body>
 </html>
