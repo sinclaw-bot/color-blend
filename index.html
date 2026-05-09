@@ -780,7 +780,7 @@
       );
       const lumSolid = luminance(r, g, b);
       previewLabels[0].style.color = lumCss > 0.5 ? '#000' : '#fff';
-      previewLabels[1].style.color = '#fff';
+      previewLabels[1].style.color = lumSolid > 0.5 ? '#000' : '#fff';
       previewLabels[2].style.color = lumSolid > 0.5 ? '#000' : '#fff';
 
       // Подписи
