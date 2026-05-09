@@ -752,15 +752,16 @@
             bgPx = isDark ? [176, 176, 176] : [208, 208, 208];
           }
           // Смешиваем в linear RGB (gamma decode → mix → gamma encode)
-          const bLin = Math.pow(bgPx[0] / 255, G);
-          const gLin = Math.pow(bgPx[1] / 255, G);
-          const rLin = Math.pow(bgPx[2] / 255, G);
-          const fb = Math.pow(fg[0] / 255, G);
-          const fgL = Math.pow(fg[1] / 255, G);
-          const fr = Math.pow(fg[2] / 255, G);
-          const outB = Math.pow(bLin * (1 - alpha) + fb * alpha, 1 / G) * 255;
-          const outG = Math.pow(gLin * (1 - alpha) + fgL * alpha, 1 / G) * 255;
-          const outR = Math.pow(rLin * (1 - alpha) + fr * alpha, 1 / G) * 255;
+          // bgPx/fg = [R, G, B]; ImageData = RGBA порядок
+          const rBg = Math.pow(bgPx[0] / 255, G);
+          const gBg = Math.pow(bgPx[1] / 255, G);
+          const bBg = Math.pow(bgPx[2] / 255, G);
+          const rFg = Math.pow(fg[0] / 255, G);
+          const gFg = Math.pow(fg[1] / 255, G);
+          const bFg = Math.pow(fg[2] / 255, G);
+          const outR = Math.pow(rBg * (1 - alpha) + rFg * alpha, 1 / G) * 255;
+          const outG = Math.pow(gBg * (1 - alpha) + gFg * alpha, 1 / G) * 255;
+          const outB = Math.pow(bBg * (1 - alpha) + bFg * alpha, 1 / G) * 255;
           data[off] = Math.round(outR);
           data[off + 1] = Math.round(outG);
           data[off + 2] = Math.round(outB);
