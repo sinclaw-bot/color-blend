@@ -83,7 +83,7 @@
       transform: scale(1.05);
     }
 
-    /* Preview: 3 panels */
+    /* Preview split: CSS (naive) vs Solid result */
     .preview-split {
       background: var(--surface);
       margin-bottom: 28px;
@@ -103,17 +103,9 @@
       align-items: center;
       padding-top: 14px;
       transition: background .15s;
-      position: relative;
-      overflow: hidden;
     }
     .preview-panel + .preview-panel {
       border-left: 1px solid var(--border);
-    }
-    .preview-panel canvas {
-      position: absolute;
-      inset: 0;
-      width: 100% !important;
-      height: 100% !important;
     }
     .preview-panel-label {
       font-size: 0.65rem;
@@ -496,15 +488,11 @@
       <button class="theme-toggle" id="themeToggle" title="Сменить тему">🌙</button>
     </header>
 
-    <!-- Preview: 3 panels -->
+    <!-- Preview: CSS rgba vs Solid result -->
     <div class="preview-split">
       <div class="preview-split-bar">
         <div class="preview-panel" id="panelCss">
-          <span class="preview-panel-label">CSS rgba</span>
-        </div>
-        <div class="preview-panel" id="panelCanvas">
-          <canvas id="blendCanvas"></canvas>
-          <span class="preview-panel-label">Canvas</span>
+          <span class="preview-panel-label">Браузер (CSS)</span>
         </div>
         <div class="preview-panel" id="panelSolid">
           <span class="preview-panel-label">Результат</span>
@@ -512,7 +500,6 @@
       </div>
       <div class="preview-half-caption">
         <span class="side" id="capCss">rgba(255,107,53,0.30)</span>
-        <span class="side" id="capCanvas">γ=2.2</span>
         <span class="side" id="capSolid">#ffaa77</span>
       </div>
     </div>
@@ -633,12 +620,8 @@
     const themeBtn = document.getElementById('themeToggle');
     const bgPresets = document.querySelectorAll('.bg-preset');
     const panelCss = document.getElementById('panelCss');
-    const panelCanvas = document.getElementById('panelCanvas');
     const panelSolid = document.getElementById('panelSolid');
-    const blendCanvas = document.getElementById('blendCanvas');
-    const ctx = blendCanvas.getContext('2d');
     const capCss = document.getElementById('capCss');
-    const capCanvas = document.getElementById('capCanvas');
     const capSolid = document.getElementById('capSolid');
     const previewLabels = document.querySelectorAll('.preview-panel-label');
     const elHex = document.getElementById('resultHex');
@@ -731,45 +714,7 @@
         panelCss.style.background = `linear-gradient(${fgRgba}, ${fgRgba}), ${bgHexStr}`;
       }
 
-      // Панель 2: Canvas с гамма-коррекцией
-      // Рендерим пиксель за пикселем — сначала фон, потом alpha overlay в linear RGB
-      const w = panelCanvas.offsetWidth || 240;
-      const h = panelCanvas.offsetHeight || 200;
-      blendCanvas.width = w;
-      blendCanvas.height = h;
-      const imgData = ctx.createImageData(w, h);
-      const data = imgData.data;
-      const Gc = useGamma ? GAMMA : 1;
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          const off = (y * w + x) * 4;
-          // Шахматный фон или сплошной
-          let bgPx = bg;
-          if (grid) {
-            const cx = x % 24 < 12 ? 0 : 1;
-            const cy = y % 24 < 12 ? 0 : 1;
-            const isDark = (cx + cy) % 2 === 0;
-            bgPx = isDark ? [176, 176, 176] : [208, 208, 208];
-          }
-          // Смешиваем в linear RGB (gamma decode → mix → gamma encode)
-          const rBg = Math.pow(bgPx[0] / 255, Gc);
-          const gBg = Math.pow(bgPx[1] / 255, Gc);
-          const bBg = Math.pow(bgPx[2] / 255, Gc);
-          const rFg = Math.pow(fg[0] / 255, Gc);
-          const gFg = Math.pow(fg[1] / 255, Gc);
-          const bFg = Math.pow(fg[2] / 255, Gc);
-          const outR = Math.pow(rBg * (1 - alpha) + rFg * alpha, 1 / Gc) * 255;
-          const outG = Math.pow(gBg * (1 - alpha) + gFg * alpha, 1 / Gc) * 255;
-          const outB = Math.pow(bBg * (1 - alpha) + bFg * alpha, 1 / Gc) * 255;
-          data[off] = Math.round(outR);
-          data[off + 1] = Math.round(outG);
-          data[off + 2] = Math.round(outB);
-          data[off + 3] = 255;
-        }
-      }
-      ctx.putImageData(imgData, 0, 0);
-
-      // Панель 3: Сплошной цвет — результат
+      // Панель 2: Сплошной цвет — результат
       panelSolid.style.background = hex;
 
       // Цвет лейблов
@@ -781,12 +726,12 @@
       const lumSolid = luminance(r, g, b);
       previewLabels[0].style.color = lumCss > 0.5 ? '#000' : '#fff';
       previewLabels[1].style.color = lumSolid > 0.5 ? '#000' : '#fff';
-      previewLabels[2].style.color = lumSolid > 0.5 ? '#000' : '#fff';
+      
 
       // Подписи
       const alphaHex = Math.round(alpha * 255).toString(16).padStart(2, '0');
       capCss.textContent = `${bgHexStr} + ${fgHex.value}${alphaHex}`;
-      capCanvas.textContent = `γ=${useGamma ? '2.2' : '1.0'}`;
+      
       capSolid.textContent = hex;
 
       // Result display
