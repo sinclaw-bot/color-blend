@@ -633,9 +633,11 @@
     const toast = document.getElementById('toast');
 
     const GAMMA = 2.2;
-    let dark = false;
-
-    // ≡ Utilities ≡
+    let dark = localStorage.getItem('cblend-theme') === 'dark';
+    if (dark) {
+      document.documentElement.classList.add('dark');
+      themeBtn.textContent = '☀️';
+    }
     function hexToRgb(hex) {
       const v = parseInt(hex.slice(1), 16);
       return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
@@ -775,6 +777,7 @@
       dark = !dark;
       document.documentElement.classList.toggle('dark', dark);
       themeBtn.textContent = dark ? '☀️' : '🌙';
+      localStorage.setItem('cblend-theme', dark ? 'dark' : 'light');
       update();
     });
 
