@@ -83,7 +83,7 @@
       transform: scale(1.05);
     }
 
-    /* Preview split */
+    /* Preview: 3 panels */
     .preview-split {
       background: var(--surface);
       margin-bottom: 28px;
@@ -92,39 +92,49 @@
       box-shadow: var(--shadow);
       transition: background .3s;
     }
-.preview-split-bar {
+    .preview-split-bar {
       display: flex;
       height: 200px;
     }
-    .preview-half {
+    .preview-panel {
       flex: 1;
       display: flex;
-      align-items: flex-start;
-      justify-content: center;
+      flex-direction: column;
+      align-items: center;
       padding-top: 14px;
       transition: background .15s;
+      position: relative;
+      overflow: hidden;
     }
-    .preview-half-label {
+    .preview-panel + .preview-panel {
+      border-left: 1px solid var(--border);
+    }
+    .preview-panel canvas {
+      position: absolute;
+      inset: 0;
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .preview-panel-label {
       font-size: 0.65rem;
       font-weight: 500;
       text-transform: uppercase;
       letter-spacing: .06em;
-      padding: 3px 10px;
+      padding: 2px 10px;
       border-radius: 6px;
       background: oklch(0 0 0 / 0.25);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       opacity: 0.75;
       pointer-events: none;
-      transition: opacity .3s;
+      z-index: 1;
     }
-    .dark .preview-half-label {
+    .dark .preview-panel-label {
       background: oklch(1 0 0 / 0.2);
     }
     .preview-half-caption {
       padding: 10px 16px;
       display: flex;
-      transition: color .3s;
     }
     .preview-half-caption .side {
       flex: 1;
@@ -470,7 +480,8 @@
       .result-values { grid-template-columns: 1fr; }
       .header-left h1 { font-size: 1.3rem; }
       .bg-presets { margin-left: 0; }
-      .preview-half-caption .side { font-size: 0.65rem; }
+      .preview-split-bar { height: 140px; }
+      .preview-half-caption .side { font-size: 0.6rem; }
     }
   </style>
 </head>
@@ -485,19 +496,24 @@
       <button class="theme-toggle" id="themeToggle" title="Сменить тему">🌙</button>
     </header>
 
-    <!-- Preview split -->
+    <!-- Preview: 3 panels -->
     <div class="preview-split">
       <div class="preview-split-bar">
-        <div class="preview-half" id="previewAlpha">
-          <span class="preview-half-label">С наложением</span>
+        <div class="preview-panel" id="panelCss">
+          <span class="preview-panel-label">CSS rgba</span>
         </div>
-        <div class="preview-half" id="previewSolid">
-          <span class="preview-half-label">Результат</span>
+        <div class="preview-panel" id="panelCanvas">
+          <canvas id="blendCanvas"></canvas>
+          <span class="preview-panel-label">Canvas</span>
+        </div>
+        <div class="preview-panel" id="panelSolid">
+          <span class="preview-panel-label">Результат</span>
         </div>
       </div>
       <div class="preview-half-caption">
-        <span class="side" id="previewAlphaHex">rgba(255,107,53,0.30)</span>
-        <span class="side" id="previewSolidHex">#ffaa77</span>
+        <span class="side" id="capCss">rgba(255,107,53,0.30)</span>
+        <span class="side" id="capCanvas">γ=2.2</span>
+        <span class="side" id="capSolid">#ffaa77</span>
       </div>
     </div>
 
@@ -616,11 +632,15 @@
     const showGrid = document.getElementById('showGrid');
     const themeBtn = document.getElementById('themeToggle');
     const bgPresets = document.querySelectorAll('.bg-preset');
-    const previewAlpha = document.getElementById('previewAlpha');
-    const previewSolid = document.getElementById('previewSolid');
-    const previewAlphaHex = document.getElementById('previewAlphaHex');
-    const previewSolidHex = document.getElementById('previewSolidHex');
-    const previewLabels = document.querySelectorAll('.preview-half-label');
+    const panelCss = document.getElementById('panelCss');
+    const panelCanvas = document.getElementById('panelCanvas');
+    const panelSolid = document.getElementById('panelSolid');
+    const blendCanvas = document.getElementById('blendCanvas');
+    const ctx = blendCanvas.getContext('2d');
+    const capCss = document.getElementById('capCss');
+    const capCanvas = document.getElementById('capCanvas');
+    const capSolid = document.getElementById('capSolid');
+    const previewLabels = document.querySelectorAll('.preview-panel-label');
     const elHex = document.getElementById('resultHex');
     const elRgb = document.getElementById('resultRgb');
     const elOklch = document.getElementById('resultOklch');
@@ -700,32 +720,73 @@
       const rgb = `rgb(${r},${g},${b})`;
       const ro = Math.round(otherResult[0]), go = Math.round(otherResult[1]), bo = Math.round(otherResult[2]);
 
-      // Preview split: левая = alpha на bg, правая = solid результат
+      // Preview: CSS rgba (наивный), Canvas (гамма), Solid результат
       const bgHexStr = bgColor.value;
       const fgRgba = `rgba(${fg.join(',')},${alpha.toFixed(2)})`;
 
-      // Левая половина: шахматный фон + alpha overlay
+      // Панель 1: CSS rgba (без гаммы)
       if (grid) {
-        previewAlpha.style.background = `linear-gradient(${fgRgba}, ${fgRgba}), repeating-conic-gradient(#b0b0b0 0% 25%, #d0d0d0 0% 50%) 0px 0px / 24px 24px`;
+        panelCss.style.background = `linear-gradient(${fgRgba}, ${fgRgba}), repeating-conic-gradient(#b0b0b0 0% 25%, #d0d0d0 0% 50%) 0px 0px / 24px 24px`;
       } else {
-        previewAlpha.style.background = `linear-gradient(${fgRgba}, ${fgRgba}), ${bgHexStr}`;
+        panelCss.style.background = `linear-gradient(${fgRgba}, ${fgRgba}), ${bgHexStr}`;
       }
 
-      // Правая половина: solid результат
-      previewSolid.style.background = hex;
+      // Панель 2: Canvas с гамма-коррекцией
+      // Рендерим пиксель за пикселем — сначала фон, потом alpha overlay в linear RGB
+      const w = panelCanvas.offsetWidth || 240;
+      const h = panelCanvas.offsetHeight || 200;
+      blendCanvas.width = w;
+      blendCanvas.height = h;
+      const imgData = ctx.createImageData(w, h);
+      const data = imgData.data;
+      const G = GAMMA;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const off = (y * w + x) * 4;
+          // Шахматный фон или сплошной
+          let bgPx = bg;
+          if (grid) {
+            const cx = x % 24 < 12 ? 0 : 1;
+            const cy = y % 24 < 12 ? 0 : 1;
+            const isDark = (cx + cy) % 2 === 0;
+            bgPx = isDark ? [176, 176, 176] : [208, 208, 208];
+          }
+          // Смешиваем в linear RGB (gamma decode → mix → gamma encode)
+          const bLin = Math.pow(bgPx[0] / 255, G);
+          const gLin = Math.pow(bgPx[1] / 255, G);
+          const rLin = Math.pow(bgPx[2] / 255, G);
+          const fb = Math.pow(fg[0] / 255, G);
+          const fgL = Math.pow(fg[1] / 255, G);
+          const fr = Math.pow(fg[2] / 255, G);
+          const outB = Math.pow(bLin * (1 - alpha) + fb * alpha, 1 / G) * 255;
+          const outG = Math.pow(gLin * (1 - alpha) + fgL * alpha, 1 / G) * 255;
+          const outR = Math.pow(rLin * (1 - alpha) + fr * alpha, 1 / G) * 255;
+          data[off] = Math.round(outR);
+          data[off + 1] = Math.round(outG);
+          data[off + 2] = Math.round(outB);
+          data[off + 3] = 255;
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
 
-      // Цвет лейблов: белый на тёмном фоне, чёрный на светлом
-      // Левая половина — blended с alpha, оцениваем по bg + fg
-      const sampleBg = grid ? [176, 176, 176] : bg;
-      const blendedBg = blend(sampleBg, fg, alpha, useGamma);
-      const lumLeft = luminance(Math.round(blendedBg[0]), Math.round(blendedBg[1]), Math.round(blendedBg[2]));
-      const lumRight = luminance(r, g, b);
-      previewLabels[0].style.color = lumLeft > 0.5 ? '#000' : '#fff';
-      previewLabels[1].style.color = lumRight > 0.5 ? '#000' : '#fff';
+      // Панель 3: Сплошной цвет — результат с гаммой
+      panelSolid.style.background = hex;
+
+      // Цвет лейблов
+      const lumCss = luminance(
+        Math.round(bg[0] * (1 - alpha) + fg[0] * alpha),
+        Math.round(bg[1] * (1 - alpha) + fg[1] * alpha),
+        Math.round(bg[2] * (1 - alpha) + fg[2] * alpha)
+      );
+      const lumSolid = luminance(r, g, b);
+      previewLabels[0].style.color = lumCss > 0.5 ? '#000' : '#fff';
+      previewLabels[1].style.color = '#fff'; // canvas панель — всегда тёмная заливка фона
+      previewLabels[2].style.color = lumSolid > 0.5 ? '#000' : '#fff';
 
       // Подписи
-      previewAlphaHex.textContent = `${bgHexStr} + ${fgRgba}`;
-      previewSolidHex.textContent = hex;
+      capCss.textContent = `${bgHexStr} + ${fgRgba}`;
+      capCanvas.textContent = `γ=${useGamma ? '2.2' : '1.0'}`;
+      capSolid.textContent = hex;
 
       // Result display
       elHex.textContent = hex;
